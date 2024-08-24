@@ -1,6 +1,7 @@
 package com.open_banking.api.service;
 
 
+import io.apiwiz.compliance.config.EnableCompliance;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,12 +12,13 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@EnableCompliance
 @RequestMapping("/open-banking/accounts")
 public class AccountsService {
 
-    
-    @PostMapping("/token")
-    public ResponseEntity<Map<String, Object>> getAccessToken(@RequestBody Map<String, String> authTokenReq) {
+
+@PostMapping(value = "/token", consumes = "application/x-www-form-urlencoded")
+public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<String, String> authTokenReq) {
         Map<String, Object> tokenResponse = Map.of(
                 "access_token", "eyJraWQi...REDACTED_JWT...DvTWUSVpivBpYwH6r9gw",
                 "token_type", "Bearer",
