@@ -28,11 +28,11 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
         return new ResponseEntity<>(tokenResponse, HttpStatus.CREATED);
     }
     
-    @PostMapping("/accounts/account-access-consents")
+    @PostMapping("/account-access-consents")
     public ResponseEntity<Map<String, Object>> createAccountAccessConsent(@RequestBody Map<String, Object> request) {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
-                        "Status", "AwaitingAuthorisation",
+                        "Status", "Authorized",
                         "StatusUpdateDateTime", "2022-09-22T11:47:10.366163Z",
                         "CreationDateTime", "2022-09-22T11:47:10.366163Z",
                         "TransactionToDateTime", "2022-12-03T00:00:00+00:00",
