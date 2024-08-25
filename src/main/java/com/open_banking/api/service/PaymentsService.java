@@ -113,7 +113,25 @@ public ResponseEntity<Map<String, Object>> getDomesticPaymentConsent(@PathVariab
 }
 
 @GetMapping("/domestic-payment-consents/{consentId}/funds-confirmation")
-public ResponseEntity<Map<String, Object>> getFundsConfirmation(@PathVariable String consentId) {
+public ResponseEntity<Map<String, Object>> getFundsConfirmation(@PathVariable String consentId,
+                                                                @RequestHeader (value = "deviate",required = false) boolean deviate) {
+    if(deviate){
+        Map<String, Object> jsonMap = Map.of(
+                "Data", Map.of(
+                        "FundsAvailableResult", Map.of(
+                                "FundsAvailableDateTime", "2022-09-23T09:08:27.508922Z",
+                                "FundsAvailable", false
+                        )
+                ),
+                "Links", Map.of(
+                        "Self", "https://oba.revolut.com/domestic-payment-consents/e3884854-be36-xxxx-xxxx-9ce807ab1335/funds-confirmation"
+                ),
+                "Meta", Map.of(
+                        "TotalPages", 1
+                )
+        );
+        return new ResponseEntity<>(jsonMap, HttpStatus.OK);
+    }
     Map<String, Object> jsonMap = Map.of(
             "Data", Map.of(
                     "FundsAvailableResult", Map.of(
@@ -170,7 +188,43 @@ public ResponseEntity<Map<String, Object>> createDomesticPayment(@RequestBody Ma
 }
 
 @GetMapping("/domestic-payments/{id}")
-public ResponseEntity<Map<String, Object>> getDomesticPayment(@PathVariable String id) {
+public ResponseEntity<Map<String, Object>> getDomesticPayment(@PathVariable String id,
+ @RequestHeader (value = "deviate",required = false) boolean deviate) {
+    if(deviate){
+        Map<String, Object> jsonMap = Map.of(
+                "Data", Map.of(
+                        "DomesticPaymentId", "637f57f9-4330-ad90-8692-95cc2a4f3334",
+                        "Status", "PaymentFailed",
+                        "StatusUpdateDateTime", "2022-11-24T11:39:37.841424Z",
+                        "CreationDateTime", "2022-11-24T11:39:37.841424Z",
+                        "ConsentId", "0cb5ccc0-5340-4c2a-8b6f-fce31148024d",
+                        "Initiation", Map.of(
+                                "CreditorAccount", Map.of(
+                                        "Name", "Receiver Co.",
+                                        "SchemeName", "UK.OBIE.SortCodeAccountNumber",
+                                        "Identification", "11223321325698"
+                                ),
+                                "InstructedAmount", Map.of(
+                                        "Amount", "10.0",
+                                        "Currency", "GBP"
+                                ),
+                                "RemittanceInformation", Map.of(
+                                        "Reference", "ReceiverRef",
+                                        "Unstructured", "Shipment fee"
+                                ),
+                                "EndToEndIdentification", "E2E123",
+                                "InstructionIdentification", "ID412"
+                        )
+                ),
+                "Links", Map.of(
+                        "Self", "https://oba.revolut.codes/domestic-payments/637f57f9-4330-ad90-8692-95cc2a4f3334"
+                ),
+                "Meta", Map.of(
+                        "TotalPages", 1
+                )
+        );
+        return new ResponseEntity<>(jsonMap, HttpStatus.OK);
+    }
     Map<String, Object> jsonMap = Map.of(
             "Data", Map.of(
                     "DomesticPaymentId", "637f57f9-4330-ad90-8692-95cc2a4f3334",

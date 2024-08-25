@@ -2,6 +2,7 @@ package com.open_banking.api.service;
 
 
 import io.apiwiz.compliance.config.EnableCompliance;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,11 +14,11 @@ import java.util.Map;
 
 @RestController
 @EnableCompliance
-@RequestMapping("/open-banking/accounts")
+@RequestMapping("/merchant-accounts")
 public class AccountsService {
 
 
-@PostMapping(value = "/token", consumes = "application/x-www-form-urlencoded")
+@PostMapping(value = "token", consumes = "application/x-www-form-urlencoded")
 public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<String, String> authTokenReq) {
         Map<String, Object> tokenResponse = Map.of(
                 "access_token", "eyJraWQi...REDACTED_JWT...DvTWUSVpivBpYwH6r9gw",
@@ -27,7 +28,7 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
         return new ResponseEntity<>(tokenResponse, HttpStatus.CREATED);
     }
     
-    @PostMapping("/account-access-consents")
+    @PostMapping("/accounts/account-access-consents")
     public ResponseEntity<Map<String, Object>> createAccountAccessConsent(@RequestBody Map<String, Object> request) {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
@@ -54,7 +55,7 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
         return new ResponseEntity<>(jsonResponse,HttpStatus.CREATED);
     }
     
-    @GetMapping("/account-access-consents/{consentId}")
+    @GetMapping("/accounts/account-access-consents/{consentId}")
     public ResponseEntity<Map<String, Object>> getAccountAccessConsentById(@PathVariable String consentId) {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
@@ -85,14 +86,14 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
     public ResponseEntity<Void> deleteAccountAccessConsentById(@PathVariable String consentId) {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-    
     @GetMapping("/accounts")
-    public ResponseEntity<?> getAllAccounts() {
+    public ResponseEntity<?> getAllAccounts(@RequestHeader (value = "x-fapi-financial-id", required = false) String xfapId,
+                                            @RequestHeader (value= "Authorization") String Authorization ) {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
                         "Account", List.of(
                                 Map.of(
-                                        "AccountId", "d3779729-xxxx-xxxx-bb43-fb5159b7c166",
+                                        "AccountId", "d3779729-c3r5-b5dd-bb43-fb5159b7c166",
                                         "Currency", "GBP",
                                         "AccountType", "Personal",
                                         "AccountSubType", "CurrentAccount",
@@ -121,7 +122,7 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
         return new ResponseEntity<>(jsonResponse ,HttpStatus.OK);
     }
     
-    @GetMapping("/accounts/{id}")
+    @GetMapping("/accounts/accounts/{id}")
     public ResponseEntity<Map<String, Object>> getAccountById(@PathVariable String id) {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
