@@ -2,13 +2,16 @@ package com.open_banking.api.service;
 
 
 import io.apiwiz.compliance.config.EnableCompliance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 
-
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,20 +19,65 @@ import java.util.Map;
 @EnableCompliance
 @RequestMapping("/merchant-accounts")
 public class AccountsService {
+@Autowired
+private RestTemplate restTemplate;
 
+@Value("${api.account.access.consent:null}")
+private String createAccountAccessConsent ;
+
+@Value("${api.retrieve.all.accounts:null}")
+private String retrieveAllAccounts ;
+
+@Value("${api.retrieve.balance.account:null}")
+private String retrieveAccountBalance ;
+
+@Value("${api.payments.create.domestic.consents:null}")
+private String createDomesticPaymentConsent ;
 
 @PostMapping(value = "token", consumes = "application/x-www-form-urlencoded")
-public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<String, String> authTokenReq) {
+public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<String, String> authTokenReq,
+                                                          @RequestHeader(value = "deviate", required = false) boolean deviate,
+                                                          @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
         Map<String, Object> tokenResponse = Map.of(
                 "access_token", "eyJraWQi...REDACTED_JWT...DvTWUSVpivBpYwH6r9gw",
                 "token_type", "Bearer",
                 "expires_in", 2399
         );
+    if(enableTracing){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        headers.add("deviate",String.valueOf(deviate));
+        headers.add("x-fapi-financial-id","DBAN23");
+        headers.add("Content-Type","application/json");
+        Map<String, Object> map = new HashMap<>() {{
+            put("Data", new HashMap<String, Object>() {{
+                put("Permissions", List.of(
+                        "ReadAccountsBasic",
+                        "ReadAccountsDetail",
+                        "ReadBalances",
+                        "ReadBeneficiariesBasic",
+                        "ReadBeneficiariesDetail",
+                        "ReadTransactionsBasic",
+                        "ReadTransactionsDetail",
+                        "ReadTransactionsCredits",
+                        "ReadTransactionsDebits"
+                ));
+                put("ExpirationDateTime", "2052-12-02T00:00:00+00:00");
+                put("TransactionFromDateTime", "2000-01-01T00:00:00+00:00");
+                put("TransactionToDateTime", "2052-12-02T00:00:00+00:00");
+            }});
+            put("Risk", new HashMap<String, Object>());
+        }};
+        HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(map,headers);
+        restTemplate.exchange(new URI(createAccountAccessConsent), HttpMethod.POST,httpEntity,Object.class);
+    }
         return new ResponseEntity<>(tokenResponse, HttpStatus.CREATED);
     }
     
     @PostMapping("/account-access-consents")
-    public ResponseEntity<Map<String, Object>> createAccountAccessConsent(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<Map<String, Object>> createAccountAccessConsent(@RequestBody Map<String, Object> request,
+                                                                          @RequestHeader(value = "deviate", required = false) boolean deviate,
+                                                                          @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
                         "Status", "Authorized",
@@ -52,6 +100,14 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
                         "TotalPages", 1
                 )
         );
+        if(enableTracing) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("enableTracing", String.valueOf(Boolean.TRUE));
+            headers.add("deviate", String.valueOf(deviate));
+            headers.add("x-fapi-financial-id","DBAN23");
+            headers.add("Authorization","Bearer");
+            restTemplate.exchange(new URI(retrieveAllAccounts), HttpMethod.GET,new HttpEntity<>(headers),Object.class);
+        }
         return new ResponseEntity<>(jsonResponse,HttpStatus.CREATED);
     }
     
@@ -88,7 +144,9 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
     }
     @GetMapping("/accounts")
     public ResponseEntity<?> getAllAccounts(@RequestHeader (value = "x-fapi-financial-id", required = false) String xfapId,
-                                            @RequestHeader (value= "Authorization") String Authorization ) {
+                                            @RequestHeader (value= "Authorization") String Authorization,
+                                            @RequestHeader(value = "deviate", required = false) boolean deviate,
+                                            @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
                         "Account", List.of(
@@ -119,6 +177,13 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
                         "TotalPages", 1
                 )
         );
+        if(enableTracing) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("enableTracing", String.valueOf(Boolean.TRUE));
+            headers.add("deviate", String.valueOf(deviate));
+            headers.add("x-fapi-financial-id","DBAN23");
+            restTemplate.exchange(new URI(retrieveAccountBalance), HttpMethod.GET,new HttpEntity<>(headers),Object.class);
+        }
         return new ResponseEntity<>(jsonResponse ,HttpStatus.OK);
     }
     
@@ -158,7 +223,9 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
     }
     
     @GetMapping("/accounts/{id}/balances")
-    public ResponseEntity<Map<String, Object>> getAccountBalanceById(@PathVariable String id) {
+    public ResponseEntity<Map<String, Object>> getAccountBalanceById(@PathVariable String id ,
+                                                                     @RequestHeader(value = "deviate", required = false) boolean deviate,
+                                                                     @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
         Map<String, Object> jsonResponse = Map.of(
                 "Data", Map.of(
                         "Balance", List.of(
@@ -181,6 +248,53 @@ public ResponseEntity<Map<String, Object>> getAccessToken(@RequestParam Map<Stri
                         "TotalPages", 1
                 )
         );
+        if(enableTracing) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("enableTracing", String.valueOf(Boolean.TRUE));
+            headers.add("deviate", String.valueOf(deviate));
+            headers.add("x-fapi-financial-id","DBAN23");
+            headers.add("Content-Type","application/json");
+            headers.add("Authorization","bearer");
+            headers.add("x-jws-signature","eyJraWQi");
+            headers.add("x-idempotency-key","678aex-5608");
+            Map<String, Object> map = new HashMap<>() {{
+                put("Data", new HashMap<String, Object>() {{
+                    put("Initiation", new HashMap<String, Object>() {{
+                        put("InstructionIdentification", "ID41233331");
+                        put("EndToEndIdentification", "E2E12333331");
+                        put("InstructedAmount", new HashMap<String, Object>() {{
+                            put("Amount", "1.00");
+                            put("Currency", "GBP");
+                        }});
+                        put("CreditorAccount", new HashMap<String, Object>() {{
+                            put("SchemeName", "UK.OBIE.SortCodeAccountNumber");
+                            put("Identification", "00000070207055");
+                            put("Name", "Receiver Co.");
+                        }});
+                        put("RemittanceInformation", new HashMap<String, Object>() {{
+                            put("Reference", "ReceiverRef");
+                            put("Unstructured", "Shipment fee");
+                        }});
+                    }});
+                }});
+                put("Risk", new HashMap<String, Object>() {{
+                    put("PaymentContextCode", "EcommerceGoods");
+                    put("MerchantCategoryCode", "5967");
+                    put("MerchantCustomerIdentification", "1238808123123");
+                    put("DeliveryAddress", new HashMap<String, Object>() {{
+                        put("AddressLine", List.of("7"));
+                        put("StreetName", "Apple Street");
+                        put("BuildingNumber", "1");
+                        put("PostCode", "E2 7AA");
+                        put("TownName", "London");
+                        put("Country", "UK");
+                    }});
+                }});
+            }};
+            HttpEntity<Map<String,Object>> http = new HttpEntity<>(map,headers);
+            restTemplate.exchange(new URI(createDomesticPaymentConsent), HttpMethod.POST,http,Object.class);
+        }
+        
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
     

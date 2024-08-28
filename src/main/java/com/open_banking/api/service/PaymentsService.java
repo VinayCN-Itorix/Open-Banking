@@ -1,11 +1,15 @@
 package com.open_banking.api.service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +18,25 @@ import java.util.Map;
 @RequestMapping("/open-payments")
 public class PaymentsService {
 
+@Autowired
+private RestTemplate restTemplate;
+
+@Value("${api.funds.confirmation:null}")
+private String getFundsConfirmation ;
+
+@Value("${api.create.domestic.payment:null}")
+private String createDomesticPayment;
+
+@Value("${api.get.domestic.payment:null}")
+private String getDomesticPayment ;
+
+@Value("${api.delete.account.access.consent:null}")
+private String cancelAccountAccessConsent;
+
 @PostMapping("/domestic-payment-consents")
-public ResponseEntity<?> createDomesticPaymentConsent(@RequestBody Map<String, Object> requestBody) {
+public ResponseEntity<?> createDomesticPaymentConsent(@RequestBody Map<String, Object> requestBody,
+                                                      @RequestHeader(value = "deviate", required = false) boolean deviate,
+                                                      @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException  {
     Map<String, Object> jsonMap = Map.of(
             "Data", Map.of(
                     "Status", "AwaitingAuthorisation",
@@ -60,6 +81,17 @@ public ResponseEntity<?> createDomesticPaymentConsent(@RequestBody Map<String, O
                     "TotalPages", 1
             )
     );
+    if(enableTracing) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("enableTracing", String.valueOf(Boolean.TRUE));
+        headers.add("deviate", String.valueOf(deviate));
+        headers.add("x-fapi-financial-id","DBAN23");
+        headers.add("Content-Type","application/json");
+        headers.add("Authorization","bearer");
+        headers.add("x-jws-signature","eyJraWQi");
+        headers.add("x-idempotency-key","678aex-5608");
+        restTemplate.exchange(new URI(getFundsConfirmation), HttpMethod.GET,new HttpEntity<>(headers),Object.class);
+    }
     return new ResponseEntity<>(jsonMap,HttpStatus.CREATED);
 }
 
@@ -114,7 +146,8 @@ public ResponseEntity<Map<String, Object>> getDomesticPaymentConsent(@PathVariab
 
 @GetMapping("/domestic-payment-consents/{consentId}/funds-confirmation")
 public ResponseEntity<Map<String, Object>> getFundsConfirmation(@PathVariable String consentId,
-                                                                @RequestHeader (value = "deviate",required = false) boolean deviate) {
+                                                                @RequestHeader (value = "deviate",required = false) boolean deviate,
+                                                                @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
     if(deviate){
         Map<String, Object> jsonMap = Map.of(
                 "Data", Map.of(
@@ -130,6 +163,12 @@ public ResponseEntity<Map<String, Object>> getFundsConfirmation(@PathVariable St
                         "TotalPages", 1
                 )
         );
+        if(enableTracing){
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("x-fapi-financial-id","DBAN23");
+            headers.add("Authorization","bearer");
+            restTemplate.exchange(new URI(cancelAccountAccessConsent), HttpMethod.DELETE,new HttpEntity<>(headers),Object.class);
+        }
         return new ResponseEntity<>(jsonMap, HttpStatus.OK);
     }
     Map<String, Object> jsonMap = Map.of(
@@ -146,11 +185,68 @@ public ResponseEntity<Map<String, Object>> getFundsConfirmation(@PathVariable St
                     "TotalPages", 1
             )
     );
+    if(enableTracing) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("enableTracing", String.valueOf(Boolean.TRUE));
+        headers.add("deviate", String.valueOf(deviate));
+        headers.add("x-fapi-financial-id","DBAN23");
+        headers.add("Content-Type","application/json");
+        headers.add("Authorization","bearer");
+        headers.add("x-jws-signature","eyJraWQi");
+        headers.add("x-idempotency-key","678aex-5608");
+        Map<String, Object> map = Map.ofEntries(
+                Map.entry("Data", Map.ofEntries(
+                        Map.entry("Status", "Authorized"),
+                        Map.entry("StatusUpdateDateTime", "2022-09-23T08:34:43.275221Z"),
+                        Map.entry("CreationDateTime", "2022-09-23T08:34:43.275221Z"),
+                        Map.entry("ConsentId", "0d4b6692-xxxx-4938-xxxx-99e125231cf9"),
+                        Map.entry("Initiation", Map.ofEntries(
+                                Map.entry("InstructionIdentification", "ID412"),
+                                Map.entry("EndToEndIdentification", "E2E123"),
+                                Map.entry("InstructedAmount", Map.ofEntries(
+                                        Map.entry("Amount", "10.0"),
+                                        Map.entry("Currency", "GBP")
+                                )),
+                                Map.entry("CreditorAccount", Map.ofEntries(
+                                        Map.entry("SchemeName", "UK.OBIE.SortCodeAccountNumber"),
+                                        Map.entry("Identification", "11223321325698"),
+                                        Map.entry("Name", "Receiver Co.")
+                                )),
+                                Map.entry("RemittanceInformation", Map.ofEntries(
+                                        Map.entry("Reference", "ReceiverRef"),
+                                        Map.entry("Unstructured", "Shipment fee")
+                                ))
+                        ))
+                )),
+                Map.entry("Risk", Map.ofEntries(
+                        Map.entry("PaymentContextCode", "EcommerceGoods"),
+                        Map.entry("MerchantCategoryCode", "5967"),
+                        Map.entry("MerchantCustomerIdentification", "1238808123123"),
+                        Map.entry("DeliveryAddress", Map.ofEntries(
+                                Map.entry("AddressLine", List.of("7")),
+                                Map.entry("StreetName", "Apple Street"),
+                                Map.entry("BuildingNumber", "1"),
+                                Map.entry("PostCode", "E2 7AA"),
+                                Map.entry("TownName", "London"),
+                                Map.entry("Country", "UK")
+                        ))
+                )),
+                Map.entry("Links", Map.ofEntries(
+                        Map.entry("Self", "https://oba.revolut.com/domestic-payment-consents/0d4b6692-xxxx-4938-xxxx-99e125231cf9")
+                )),
+                Map.entry("Meta", Map.ofEntries(
+                        Map.entry("TotalPages", 1)
+                ))
+        );
+        restTemplate.exchange(new URI(createDomesticPayment), HttpMethod.POST,new HttpEntity<>(map,headers),Object.class);
+    }
     return new ResponseEntity<>(jsonMap, HttpStatus.OK);
 }
 
 @PostMapping("/domestic-payments")
-public ResponseEntity<Map<String, Object>> createDomesticPayment(@RequestBody Map<String, Object> requestBody) {
+public ResponseEntity<Map<String, Object>> createDomesticPayment(@RequestBody Map<String, Object> requestBody,
+                                                                 @RequestHeader (value = "deviate",required = false) boolean deviate,
+                                                                 @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
     // Simulate processing the request
     Map<String, Object> jsonMap = Map.of(
             "Data", Map.of(
@@ -184,12 +280,21 @@ public ResponseEntity<Map<String, Object>> createDomesticPayment(@RequestBody Ma
                     "TotalPages", 1
             )
     );
+    if(enableTracing){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("enableTracing", String.valueOf(Boolean.TRUE));
+        headers.add("deviate", String.valueOf(deviate));
+        headers.add("x-fapi-financial-id","DBAN23");
+        headers.add("Authorization","bearer");
+        restTemplate.exchange(new URI(getDomesticPayment), HttpMethod.GET,new HttpEntity<>(headers),Object.class);
+    }
     return new ResponseEntity<>(jsonMap,HttpStatus.CREATED);
 }
 
 @GetMapping("/domestic-payments/{id}")
 public ResponseEntity<Map<String, Object>> getDomesticPayment(@PathVariable String id,
- @RequestHeader (value = "deviate",required = false) boolean deviate) {
+                                                              @RequestHeader (value = "deviate",required = false) boolean deviate,
+                                                              @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException{
     if(deviate){
         Map<String, Object> jsonMap = Map.of(
                 "Data", Map.of(
@@ -257,6 +362,12 @@ public ResponseEntity<Map<String, Object>> getDomesticPayment(@PathVariable Stri
                     "TotalPages", 1
             )
     );
+    if(enableTracing){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("x-fapi-financial-id","DBAN23");
+        headers.add("Authorization","bearer");
+        restTemplate.exchange(new URI(cancelAccountAccessConsent), HttpMethod.DELETE,new HttpEntity<>(headers),Object.class);
+    }
     return new ResponseEntity<>(jsonMap, HttpStatus.OK);
 }
 
